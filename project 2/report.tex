@@ -1,0 +1,83 @@
+\documentclass[12pt]{ctexart}
+\usepackage{amsfonts,amssymb}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{geometry}
+\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage{setspace}
+\geometry{a4paper}
+\geometry{top=2cm} 
+\geometry{bottom=2cm}
+\geometry{left=0.5cm}
+\geometry{right=1cm}
+
+\title{微分方程数值解~项目作业 2}
+\author{凌子恒 \\ 信息与计算科学 3200102551}
+
+\begin{document}
+
+\maketitle
+
+\subsection*{原理分析}
+
+利用 Jacobi 迭代法，迭代格式为 $x\gets (1-w)x+wD^{-1}(L+U)x+wD^{-1}b$。
+
+由理论作业结果，取 $w=\dfrac{2}{3}$。
+
+由于矩阵是稀疏矩阵，只需存每行非零列标号和数值，使迭代一次复杂度降至 $O(n)$。
+
+对于 Neumann 边值，由于矩阵奇异，将其中一条式子替换为在 $0$ 处函数值为 $0$。
+
+\subsection*{代码解释}
+
+定义 solution 类存放结果。
+
+solution 类有两个构造函数，分别对应是否给定初值。
+
+构造函数参数分别为二阶导数，边值，段数，迭代次数，精度要求，restriction 模式，interpolation 模式，cycles 模式，估计解（可选），$v_1$（可选），$v_2$（可选）。
+
+其中边值函数返回类型为 unique\_ptr<function\_value> 或 unique\_ptr<derivative\_value>。
+
+实现中，对于 (b),(c),(d) 的选项均以同一类的派生类形式给出，在构造函数中选择对应的模式。V\_cycle 和 FMG 的 $v_1,v_2$ 均可设置，默认为 $2$。
+
+\subsection*{(a)}
+
+代码见 1D.h 和 main.cpp，输出见 1.out，包含了 $e^{\sin x},\sin(\pi x),\dfrac{1}{x+1}$ 的测试。以 $e^{\sin x}$ 为例解释。
+
+以下是 Dirichlet 边值结果
+
+\begin{tabular}{c|c|c|c|c}
+ $n$  &$32 $&$64$ &$128$&$ 256$\\
+000 &$43 $&$46$ &$48 $&$50$\\
+001 &$16 $&$15$ &$15 $&$15$\\
+010 &$41 $&$44$ &$46 $&$48$\\
+011 &$14 $&$13$ &$13 $&$12$\\
+100 &$45 $&$48$ &$50 $&$53$\\
+101 &$19 $&$19$ &$18 $&$18$\\
+110 &$42 $&$45$ &$47 $&$50$\\
+111 &$15 $&$14$ &$14 $&$14$\\
+\end{tabular}
+
+其中左侧数字分别为是否为 injection, quadratic, FMG。右侧数字是迭代至 $\epsilon<10^{-8}$ 所需次数。
+
+可以注意到，full\_weighting, quadratic, FMG 效果较好。
+
+接下来的表格为迭代 $15$ 次后的误差表。可以注意到 $15$ 次后已远小于 FD method 的系统误差（error）。
+
+随后是混合边值的结果，不重复叙述。
+
+经过测试，对 $\epsilon>2.2\times 10^{-16}$，均给出了结果。
+
+\subsection*{(b)}
+
+二维情况的代码见 2D.h。这里仅给出线性插值，不支持二次插值。
+
+测速代码见 main2.cpp，输出见 2.out。运行作业 1 代码 $n=64$，运行时间 36299621000，而本代码在 $\epsilon=10^{-8},n=256$ 下仅用时 837094500，$n=64$ 时用时 29686500，速度超过千倍。
+
+\subsection*{(c)}
+
+main.cpp 中将两个类统一作为特化的 IVP<1> 和 IVP<2> 的基类，实现了模板类。
+
+\end{document}
